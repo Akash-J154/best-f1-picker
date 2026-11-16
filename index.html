@@ -40,22 +40,28 @@ function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor
 function el(h){const d=document.createElement('div');d.innerHTML=h;return d.firstElementChild}
 function render(h){app.innerHTML='';app.appendChild(el(h));return app.firstElementChild}
 function intro(msg){
- const c=render('<div class="card"><h1>Reconstruction user study</h1><p>You will see '+N+' photos of a person with an animal. For each photo, three 3D reconstructions are shown. Select the one you think is the best reconstructed mesh. The order is shuffled and the reconstructions are not labelled.</p><p class="mut">You get a participant number when you start. You can withdraw at any point and your answers are then deleted and not counted.</p><div class="bar"><button class="pri" id="go">Start</button></div><div class="err" id="e">'+(msg||'')+'</div></div>');
+ const c=render('<div class="card"><h1>Reconstruction user study</h1><p>You will see '+N+' photos of a person with an animal. For each photo, three 3D reconstructions are shown. Select the one you think is the best reconstructed mesh. The order is shuffled and the reconstructions are not labelled.</p><p class="mut">You get a participant number when you start. You can withdraw on any question page, and your answers are then deleted and not counted. Answers are only recorded when you press Submit at the end.</p><div class="bar"><button class="pri" id="go">Start</button></div><div class="err" id="e">'+(msg||'')+'</div></div>');
  c.querySelector('#go').onclick=async()=>{try{const r=await rpc('new_participant');const p=Array.isArray(r)?r[0]:r;st={pid:p.pid,tok:p.tok,i:0,orders:{},picks:{}};save();page()}catch(e){c.querySelector('#e').textContent='Could not start: '+e.message}}}
 async function withdraw(){try{await rpc('withdraw_participant',{p_id:st.pid,p_tok:st.tok})}catch(e){}st={};save();render('<div class="card"><h1>Withdrawn</h1><p>Your answers were deleted and will not be counted.</p><div class="bar"><button class="pri" id="r">Start over</button></div></div>').querySelector('#r').onclick=()=>intro()}
 function page(){
- if(!st.pid)return intro();if(st.i>=N)return done();
+ if(!st.pid)return intro();if(st.done)return done();if(st.i>=N)return review();
  const i=st.i,k=pad(i);if(!st.orders[i]){st.orders[i]=shuffle(M);save()}
  const ord=st.orders[i],pick=st.picks[i];
  const c=render('<div class="card"><div class="bar"><span class="mut">Participant #'+st.pid+'</span><span class="mut">'+(i+1)+' / '+N+'</span></div>'+
  '<div class="instr">Select the best reconstructed mesh.</div>'+
  '<div class="inp"><img src="img/'+k+'_input.jpg" alt="Input"><span class="mut">Input</span></div>'+
  '<div class="row">'+ord.map((m,j)=>'<div class="opt'+(pick===m?' sel':'')+'"><img src="img/'+k+'_'+m+'.jpg" alt="Reconstruction '+(j+1)+'"><button class="pick'+(pick===m?' on':'')+'" data-m="'+m+'">'+(pick===m?'Selected':'Select')+'</button></div>').join('')+'</div>'+
- '<div class="bar"><button class="wd" id="wd">Withdraw</button><button class="pri" id="nx" '+(pick?'':'disabled')+'>'+(i==N-1?'Finish':'Next')+'</button></div><div class="err" id="e"></div></div>');
+ '<div class="bar"><button class="wd" id="wd">Withdraw</button><button class="pri" id="nx" '+(pick?'':'disabled')+'>Next</button></div><div class="err" id="e"></div></div>');
  c.querySelectorAll('.pick').forEach(b=>b.onclick=()=>{st.picks[i]=b.dataset.m;save();page()});
  c.querySelector('#wd').onclick=withdraw;
- c.querySelector('#nx').onclick=async()=>{try{await rpc('submit_vote',{p_id:st.pid,p_tok:st.tok,p_item:k,p_method:st.picks[i],p_order:st.orders[i]});st.i++;save();page()}catch(e){c.querySelector('#e').textContent='Could not save: '+e.message}}}
-function done(){const c=render('<div class="card"><h1>Thank you</h1><p>You are participant #'+st.pid+'. All '+N+' answers are saved.</p><div class="bar"><button class="wd" id="wd">Withdraw my answers</button></div></div>');c.querySelector('#wd').onclick=withdraw}
+ c.querySelector('#nx').onclick=()=>{st.i++;save();page()}}
+function review(){
+ const c=render('<div class="card"><div class="bar"><span class="mut">Participant #'+st.pid+'</span></div><h1>All '+N+' questions answered</h1><p>Press Submit to send your answers.</p><div class="bar"><button id="bk">Back</button><button class="pri" id="sb">Submit</button></div><div class="err" id="e"></div></div>');
+ c.querySelector('#bk').onclick=()=>{st.i=N-1;save();page()};
+ c.querySelector('#sb').onclick=async()=>{const b=c.querySelector('#sb');b.disabled=true;b.textContent='Submitting...';
+  try{for(let i=0;i<N;i++)await rpc('submit_vote',{p_id:st.pid,p_tok:st.tok,p_item:pad(i),p_method:st.picks[i],p_order:st.orders[i]});st.done=true;save();done()}
+  catch(e){b.disabled=false;b.textContent='Submit';c.querySelector('#e').textContent='Could not submit: '+e.message+'. Please try again.'}}}
+function done(){render('<div class="card"><h1>Thank you!</h1><p>Your answers have been submitted. Thank you for taking part in this study.</p><p class="mut">Participant #'+st.pid+'</p></div>')}
 async function results(){const c=render('<div class="card"><h1>Results</h1><pre id="o">Loading...</pre></div>');try{const r=await rpc('results');c.querySelector('#o').textContent=JSON.stringify(r,null,2)}catch(e){c.querySelector('#o').textContent=e.message}}
 if(location.hash==='#results')results();else page();
 window.addEventListener('hashchange',()=>location.reload());
