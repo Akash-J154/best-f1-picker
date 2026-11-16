@@ -1,0 +1,64 @@
+<title>Best-F1 Picker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root{--bg:#f6f7f9;--fg:#1c2330;--mut:#5d6778;--card:#fff;--line:#d9dde4;--acc:#1f6fd1;--acc-fg:#fff;--ok:#1a8a4a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161d;--fg:#e8ecf2;--mut:#98a2b3;--card:#1b212b;--line:#2d3542;--acc:#5ea1ff;--acc-fg:#08121f;--ok:#46c47c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12161d;--fg:#e8ecf2;--mut:#98a2b3;--card:#1b212b;--line:#2d3542;--acc:#5ea1ff;--acc-fg:#08121f;--ok:#46c47c;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:Inter,system-ui,sans-serif;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+h1{font-size:20px;margin:0}
+.sub{color:var(--mut);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center}
+.name{font-size:18px;font-weight:600}
+.f1{font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}
+.img{width:100%;border-radius:4px;background:#fff;display:block}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+button{font:inherit;font-size:14px;padding:8px 16px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+button.pri{background:var(--acc);color:var(--acc-fg);border-color:var(--acc)}
+button.sel.on{background:var(--ok);color:#fff;border-color:var(--ok)}
+button:disabled{opacity:.4;cursor:default}
+.pg{font-variant-numeric:tabular-nums;color:var(--mut);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:13px;cursor:pointer;background:var(--card)}
+.chip.on{border-color:var(--ok);color:var(--ok)}
+.chip.cur{outline:2px solid var(--acc)}
+h2{font-size:14px;margin:0}
+.list{font-family:ui-monospace,monospace;font-size:13px;word-break:break-all}
+</style>
+<div class="wrap">
+<header><h1>Best-F1 picker</h1><span class="sub">Top 20 by Milo F1 · input, ours, InteractVLM fit, MILO (AniMer+ template align)</span></header>
+<div class="card">
+ <div class="top"><span class="name" id="name"></span><span class="f1" id="f1"></span></div>
+ <img class="img" id="img" alt="Input image and three reconstructions">
+ <div class="bar">
+  <button id="prev">Previous</button>
+  <button id="sel" class="sel"></button>
+  <span class="pg" id="pg"></span>
+  <button id="next" class="pri">Next</button>
+ </div>
+</div>
+<div class="card"><h2>All samples (tap to jump, green = selected)</h2><div class="chips" id="chips"></div></div>
+<div class="card"><h2>Selected (<span id="cnt">0</span>)</h2><div class="list" id="list"></div><div class="bar"><button id="copy">Copy list</button><button id="clear">Clear</button></div></div>
+</div>
+<script>
+const D=[{"n": "cat_L001385", "img": "rows/row_01_cat_L001385.png", "h": 0.93, "a": 0.92, "m": 0.93, "v": 0.01}, {"n": "cat_H026194", "img": "rows/row_02_cat_H026194.png", "h": 0.9, "a": 0.93, "m": 0.91, "v": 0.0}, {"n": "horse_A000248", "img": "rows/row_03_horse_A000248.png", "h": 0.91, "a": 0.91, "m": 0.91, "v": 0.09}, {"n": "horse_B001634", "img": "rows/row_04_horse_B001634.png", "h": 0.8, "a": 0.97, "m": 0.89, "v": 0.14}, {"n": "cattle_B011313", "img": "rows/row_05_cattle_B011313.png", "h": 0.83, "a": 0.9, "m": 0.87, "v": 0.02}, {"n": "horse_B001643", "img": "rows/row_06_horse_B001643.png", "h": 0.82, "a": 0.89, "m": 0.85, "v": 0.06}, {"n": "cat_B005355", "img": "rows/row_07_cat_B005355.png", "h": 0.84, "a": 0.85, "m": 0.85, "v": 0.0}, {"n": "horse_A000120", "img": "rows/row_08_horse_A000120.png", "h": 0.76, "a": 0.92, "m": 0.84, "v": 0.05}, {"n": "horse_A000086", "img": "rows/row_09_horse_A000086.png", "h": 0.93, "a": 0.75, "m": 0.84, "v": 0.29}, {"n": "cattle_E000048", "img": "rows/row_10_cattle_E000048.png", "h": 0.73, "a": 0.94, "m": 0.83, "v": 0.0}, {"n": "dog_C000251", "img": "rows/row_11_dog_C000251.png", "h": 0.73, "a": 0.94, "m": 0.83, "v": 0.4}, {"n": "cat_F000627", "img": "rows/row_12_cat_F000627.png", "h": 0.75, "a": 0.9, "m": 0.83, "v": 0.28}, {"n": "horse_B002260", "img": "rows/row_13_horse_B002260.png", "h": 0.83, "a": 0.81, "m": 0.82, "v": 0.08}, {"n": "cat_C007083", "img": "rows/row_14_cat_C007083.png", "h": 0.66, "a": 0.96, "m": 0.81, "v": 0.15}, {"n": "horse_B008054", "img": "rows/row_15_horse_B008054.png", "h": 0.77, "a": 0.85, "m": 0.81, "v": 0.02}, {"n": "horse_B001620", "img": "rows/row_16_horse_B001620.png", "h": 0.68, "a": 0.93, "m": 0.81, "v": 0.37}, {"n": "horse_A000347", "img": "rows/row_17_horse_A000347.png", "h": 0.68, "a": 0.94, "m": 0.81, "v": 0.07}, {"n": "horse_B003253", "img": "rows/row_18_horse_B003253.png", "h": 0.75, "a": 0.86, "m": 0.81, "v": 0.15}, {"n": "horse_A000278", "img": "rows/row_19_horse_A000278.png", "h": 0.78, "a": 0.83, "m": 0.8, "v": 0.14}, {"n": "cattle_F000237", "img": "rows/row_20_cattle_F000237.png", "h": 0.71, "a": 0.9, "m": 0.8, "v": 0.03}];let i=0,S=new Set();
+try{S=new Set(JSON.parse(localStorage.getItem('bf1sel')||'[]'))}catch(e){}
+const $=id=>document.getElementById(id);
+function save(){try{localStorage.setItem('bf1sel',JSON.stringify([...S]))}catch(e){}}
+function draw(){const d=D[i];$('name').textContent=(i+1)+'. '+d.n;
+ $('f1').textContent='Milo F1 human '+d.h.toFixed(2)+' · animal '+d.a.toFixed(2)+' · mean '+d.m.toFixed(2)+' | InteractVLM mean '+d.v.toFixed(2);
+ $('img').src=d.img;$('pg').textContent=(i+1)+' / '+D.length;
+ $('prev').disabled=i==0;$('next').disabled=i==D.length-1;
+ const on=S.has(d.n);$('sel').textContent=on?'Selected ✓':'Select';$('sel').classList.toggle('on',on);
+ $('chips').innerHTML='';D.forEach((x,k)=>{const c=document.createElement('span');c.className='chip'+(S.has(x.n)?' on':'')+(k==i?' cur':'');c.textContent=x.n;c.onclick=()=>{i=k;draw()};$('chips').appendChild(c)});
+ $('cnt').textContent=S.size;$('list').textContent=D.filter(x=>S.has(x.n)).map(x=>x.n).join(', ')||'None yet'}
+$('prev').onclick=()=>{if(i>0){i--;draw()}};$('next').onclick=()=>{if(i<D.length-1){i++;draw()}};
+$('sel').onclick=()=>{const n=D[i].n;S.has(n)?S.delete(n):S.add(n);save();draw()};
+$('clear').onclick=()=>{S.clear();save();draw()};
+$('copy').onclick=async()=>{const t=D.filter(x=>S.has(x.n)).map(x=>x.n).join('\n');try{await navigator.clipboard.writeText(t);$('copy').textContent='Copied'}catch(e){const r=document.createRange();r.selectNodeContents($('list'));getSelection().removeAllRanges();getSelection().addRange(r)}setTimeout(()=>$('copy').textContent='Copy list',1500)};
+document.addEventListener('keydown',e=>{if(e.key=='ArrowRight')$('next').click();else if(e.key=='ArrowLeft')$('prev').click();else if(e.key==' '&&e.target.tagName!='BUTTON'){e.preventDefault();$('sel').click()}});
+draw();
+</script>
